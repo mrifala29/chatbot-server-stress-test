@@ -3,28 +3,14 @@ import { check } from 'k6';
 import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 import { Counter, Trend, Gauge } from 'k6/metrics';
 
-/* =======================
-   FLAGS
-======================= */
-
-const DEBUG = __ENV.DEBUG === 'true';
-
-/* =======================
-   METRICS
-======================= */
 
 export const ws_messages_total = new Counter('ws_messages_total');
 export const ws_success_total = new Counter('ws_success_total');
 export const ws_error_total = new Counter('ws_error_total');
-
 export const ws_response_time_success = new Trend('ws_response_time_success');
 export const ws_response_time_error = new Trend('ws_response_time_error');
-
 export const ws_active_connections = new Gauge('ws_active_connections');
 
-/* =======================
-   OPTIONS
-======================= */
 
 export const options = {
   stages: [
@@ -36,22 +22,16 @@ export const options = {
   ],
 };
 
-/* =======================
-   CONFIG
-======================= */
-
 const WS_ENDPOINT = 'ENDPOINT-WEBSOCKET';
 const TOKEN = 'TOKEN-JWT';
-
-/* =======================
-   TEST
-======================= */
 
 export default function () {
   const userId = uuidv4();
 
   const payload = JSON.stringify({
-// Payload Message
+    message: 'halo, saya sedang banyak pikiran saat ini.. seperti semua terjadi secara bersamaan',
+    user_id: userId,
+    // Payload message template
   });
 
   const url = `${WS_ENDPOINT}?token=${TOKEN}`;
@@ -70,9 +50,8 @@ export default function () {
     socket.on('message', (data) => {
       const duration = Date.now() - startTime;
 
-      if (DEBUG) {
-        console.log(`Received: ${data}`);
-      }
+      console.log(`Received: ${data}`);
+
 
       let parsed;
       try {
@@ -96,9 +75,9 @@ export default function () {
     });
 
     socket.on('error', (e) => {
-      if (DEBUG) {
-        console.log(`WebSocket error: ${e.error()}`);
-      }
+
+      console.log(`WebSocket error: ${e.error()}`);
+
       ws_error_total.add(1);
       socket.close();
     });
@@ -108,15 +87,14 @@ export default function () {
     });
 
     socket.setTimeout(() => {
-      if (DEBUG) {
-        console.log('WebSocket timed out');
-      }
+      console.log('WebSocket timed out');
       ws_error_total.add(1);
       socket.close();
-    }, 30000);
+    }, 60000);
   });
 
   check(res, {
     'WS handshake OK (101)': (r) => r && r.status === 101,
   });
 }
+
